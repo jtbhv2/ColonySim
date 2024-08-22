@@ -15,7 +15,7 @@ class Colonist:
     def __init__(self, isNewborn=False):
         self.age = 0 if isNewborn else random.randint(1, 9)
         self.maxAge = random.randint(10, 14)
-        self.foodProductionAttr = random.uniform(0.4, 2) # a range of 0.9 to 1.5 will yield exponential growth every time
+        self.foodProductionAttr = random.uniform(0.2, 2) # a range of 0.9 to 1.5 will yield exponential growth every time
 
     def foodProduction(self):
         return self.foodProductionAttr
@@ -89,9 +89,6 @@ class Environment:
     def ensureNonNegativeFood(self):
         if self.food < 0:
             self.food = 0
-
-    def getSize(self):
-        return startingColonists
 
 def colonySim():
     global environment
