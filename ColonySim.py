@@ -1,9 +1,11 @@
 import random
 import logging
+from collections import deque
+import matplotlib.pyplot as plt
 
 # Configuration
 startingColonists = 100
-startingFood = 1000
+startingFood = 100
 maxGenerations = 100
 
 # Set up logging
@@ -11,16 +13,16 @@ logging.basicConfig(level=logging.INFO, format='%(message)s')
 
 class Colonist:
     def __init__(self, isNewborn=False):
-        if isNewborn:
-            self.age = 0
-        else:
-            self.age = random.randint(1, 9)
+        self.age = 0 if isNewborn else random.randint(1, 9)
         self.maxAge = random.randint(10, 14)
-        self.foodProductionAttr = random.uniform(0.9, 1.5)
+        self.foodProductionAttr = random.uniform(0.4, 2) # a range of 0.9 to 1.5 will yield exponential growth every time
+
+    def foodProduction(self):
+        return self.foodProductionAttr
 
 class Population:
     def __init__(self, startingColonists):
-        self.colonists = [Colonist() for _ in range(startingColonists)]
+        self.colonists = deque(Colonist() for _ in range(startingColonists))
         self.colonistsBorn = 0
         self.colonistsDiedOldAge = 0
         self.colonistsDiedStarvation = 0
@@ -29,7 +31,8 @@ class Population:
         return len(self.colonists)
 
     def handleAging(self):
-        for colonist in self.colonists[:]:
+        # Process aging and removal in a single pass
+        for colonist in list(self.colonists):
             colonist.age += 1
             if colonist.age >= colonist.maxAge:
                 self.colonists.remove(colonist)
@@ -46,13 +49,15 @@ class Population:
 
     def handleStarvation(self):
         foodNeeded = environment.food
-        if self.getSize() > foodNeeded:
-            starvingCount = int(self.getSize() - foodNeeded)
-            self.colonists = self.colonists[:-starvingCount]
+        colonistsCount = self.getSize()
+        if colonistsCount > foodNeeded:
+            starvingCount = int(colonistsCount - foodNeeded)
+            # Randomly select colonists to starve
+            self.colonists = deque(random.sample(self.colonists, colonistsCount - starvingCount))
             self.colonistsDiedStarvation += starvingCount
 
     def removeColonistsDyingOfOldAge(self):
-        self.colonists = [c for c in self.colonists if c.age < c.maxAge]
+        self.colonists = deque(c for c in self.colonists if c.age < c.maxAge)
 
     def getEffectiveColonists(self):
         return [c for c in self.colonists if c.age > 1]
@@ -61,7 +66,7 @@ class Population:
         effectiveColonists = self.getEffectiveColonists()
         if not effectiveColonists:
             return 0
-        return sum(c.foodProductionAttr for c in effectiveColonists) / len(effectiveColonists)
+        return sum(c.foodProduction() for c in effectiveColonists) / len(effectiveColonists)
 
 class Environment:
     def __init__(self, food):
@@ -95,6 +100,11 @@ def colonySim():
     environment = Environment(startingFood)
     generation = 0
 
+    #i dont love these lists but they are necessary for the plotting
+    generations = []
+    colonistCounts = []
+    foodCounts = []
+
     while generation < maxGenerations:
         generation += 1
         
@@ -127,20 +137,37 @@ def colonySim():
         # 8. Logging
         logging.info(
             f'Generation: {generation}\n'
-            f'Starting Colonists This Gen: {startingColonistsThisGen}\n'
-            f'Starting Food This Gen: {int(startingFoodThisGen)}\n'
-            f'Food Gathered This Gen: {int(environment.foodGathered)}\n'
-            f'Food Consumed This Gen: {int(consumedFood)}\n'
-            f'Colonists Born This Gen: {population.colonistsBorn}\n'
-            f'Colonists Starved This Gen: {population.colonistsDiedStarvation}\n'
-            f'Colonists Died of Old Age This Gen: {population.colonistsDiedOldAge}\n'
-            f'Final Colonist Count This Gen: {population.getSize()}\n'
-            f'Final Food Count This Gen: {int(environment.food)}\n'
+            f'Starting Colonists: {startingColonistsThisGen}\n'
+            f'Starting Food: {int(startingFoodThisGen)}\n'
+            f'Food Gathered: {int(environment.foodGathered)}\n'
+            f'Food Consumed: {int(consumedFood)}\n'
+            f'Colonists Born: {population.colonistsBorn}\n'
+            f'Colonists Starved: {population.colonistsDiedStarvation}\n'
+            f'Colonists Died of Old Age: {population.colonistsDiedOldAge}\n'
+            f'Final Colonist Count: {population.getSize()}\n'
+            f'Final Food Count: {int(environment.food)}\n'
         )
+
+        # this sucks man, idk if the plotting thing will stick around
+        generations.append(generation)
+        colonistCounts.append(population.getSize())
+        foodCounts.append(environment.food)
 
         if population.getSize() == 0:
             logging.info('All colonists are dead.')
             break
+
+    # i mean wtf is all this? i hate it and it may go bye bye
+    plt.figure(figsize=(10, 6))
+    plt.plot(generations, colonistCounts, label='Colonist Count', color='blue', marker='o')
+    plt.plot(generations, foodCounts, label='Food Count', color='orange', marker='x')
+    plt.xlabel('Generation')
+    plt.ylabel('Count')
+    plt.title('Colonist and Food Counts Over Generations')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
 
 # Run simulation
 colonySim()
