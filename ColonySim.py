@@ -8,13 +8,13 @@ startingColonists = 100
 startingFood = 100
 maxGenerations = 100
 
-# Set up logging
+# Set up logging. from what i read logging is less resource intensive than printing
 logging.basicConfig(level=logging.INFO, format='%(message)s')
 
 class Colonist:
     def __init__(self, isNewborn=False):
-        self.age = 0 if isNewborn else random.randint(1, 9)
-        self.maxAge = random.randint(10, 14)
+        self.age = 0 if isNewborn else random.randint(1, 9) # I want the first group to be of all ages, then newborns always start at 0
+        self.maxAge = random.randint(10, 14) #random lifespan
         self.foodProductionAttr = random.uniform(0.2, 2) # a range of 0.9 to 1.5 will yield exponential growth every time
 
     def foodProduction(self):
@@ -22,7 +22,7 @@ class Colonist:
 
 class Population:
     def __init__(self, startingColonists):
-        self.colonists = deque(Colonist() for _ in range(startingColonists))
+        self.colonists = deque(Colonist() for _ in range(startingColonists)) #I went back and forth on what to use. i might swap deque for something else
         self.colonistsBorn = 0
         self.colonistsDiedOldAge = 0
         self.colonistsDiedStarvation = 0
@@ -39,7 +39,7 @@ class Population:
                 self.colonistsDiedOldAge += 1
 
     def calculateNewColonists(self):
-        return int(self.getSize() * random.uniform(0.1, 0.2))
+        return int(self.getSize() * random.uniform(0.1, 0.2)) #not great i know, but SOMETHING to get started with reproduction
 
     def addColonists(self, newColonistsCount):
         for _ in range(newColonistsCount):
@@ -52,7 +52,7 @@ class Population:
         colonistsCount = self.getSize()
         if colonistsCount > foodNeeded:
             starvingCount = int(colonistsCount - foodNeeded)
-            # Randomly select colonists to starve
+            # Randomly select colonists to starve. will get more fleshed out
             self.colonists = deque(random.sample(self.colonists, colonistsCount - starvingCount))
             self.colonistsDiedStarvation += starvingCount
 
@@ -97,7 +97,7 @@ def colonySim():
     environment = Environment(startingFood)
     generation = 0
 
-    #i dont love these lists but they are necessary for the plotting
+    #i dont love these lists but they are necessary for the plotting. but also fuck that plotting thing down there i mean wtf
     generations = []
     colonistCounts = []
     foodCounts = []
